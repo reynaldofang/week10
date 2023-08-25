@@ -1,6 +1,3 @@
-// userController.js
-
-const { MongoClient } = require("mongodb");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -34,13 +31,8 @@ const createUser = async (req, res) => {
   }
 
   try {
-    const mongoClient = await new MongoClient(
-      "mongodb://127.0.0.1:27017"
-    ).connect();
-    const db = mongoClient.db("revou_week10");
-
     // Check if username already exists
-    const existingUser = await db.collection("users").findOne({ username });
+    const existingUser = await req.db.collection("users").findOne({ username });
     if (existingUser) {
       return res.status(400).json({ error: "Username already exists." });
     }
@@ -48,15 +40,15 @@ const createUser = async (req, res) => {
     // Hash the password before storing it
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await db
-      .collection("users")
-      .insertOne({ username, password: hashedPassword, role });
+    const result = await req.db.collection("users").insertOne({
+      username,
+      password: hashedPassword,
+      role,
+    });
     res.json({
       message: "User created successfully.",
       userId: result.insertedId,
     });
-
-    mongoClient.close();
   } catch (error) {
     console.error("Error creating user:", error);
     res.status(500).json({ error: "Failed to create user." });
@@ -66,12 +58,7 @@ const createUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const mongoClient = await new MongoClient(
-      "mongodb://127.0.0.1:27017"
-    ).connect();
-    const db = mongoClient.db("revou_week10");
-
-    const user = await db.collection("users").findOne({ username });
+    const user = await req.db.collection("users").findOne({ username });
     if (!user) {
       throw new Error("Invalid credentials.");
     }
@@ -87,7 +74,6 @@ const loginUser = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    mongoClient.close();
 
     res.json({ message: "Login successful.", token });
   } catch (error) {
