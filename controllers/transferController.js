@@ -1,3 +1,5 @@
+const { ObjectId } = require("mongodb");
+
 const createTransferRequest = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -33,7 +35,75 @@ const getTransferList = async (req, res) => {
   }
 };
 
+// const changeTransferStatus = async (req, res) => {
+//   try {
+//     const transferId = req.params.transferId;
+//     const { status } = req.body;
+
+//     if (status !== "accept" && status !== "reject") {
+//       return res.status(400).json({ error: "Invalid status value." });
+//     }
+
+//     const updatedTransfer = await req.db
+//       .collection("transfers")
+//       .findOneAndUpdate(
+//         { _id: transferId },
+//         { $set: { status } },
+//         { returnOriginal: false }
+//       );
+
+//     if (!updatedTransfer.value) {
+//       return res
+//         .status(404)
+//         .json({ error: "Transfer not found or not pending." });
+//     }
+
+//     res.json({
+//       message: `Transfer request ${
+//         status === "accept" ? "accepted" : "rejected"
+//       } successfully.`,
+//       transfer: updatedTransfer.value,
+//     });
+//   } catch (error) {
+//     console.error("Error changing transfer status:", error);
+//     res.status(500).json({ error: "Failed to change transfer status." });
+//   }
+// };
+
+const changeTransferStatus = async (req, res) => {
+  try {
+    const transferId = new ObjectId(req.params.transferId);
+
+    console.log(transferId);
+    const { status } = req.body;
+
+    // Check if the user is an "approver"
+    if (req.user.role !== "approver") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    if (status !== "accept" && status !== "decline") {
+      return res.status(400).json({ error: "Invalid status value." });
+    }
+
+    const result = await req.db
+      .collection("transfers")
+      .updateOne({ _id: transferId }, { $set: { status } });
+
+    console.log("MongoDB Update Result:", result);
+
+    if (result.modifiedCount === 1) {
+      res.json({ message: "Transfer status updated successfully." });
+    } else {
+      res.status(404).json({ error: "Transfer not found." });
+    }
+  } catch (error) {
+    console.error("Error changing transfer status:", error);
+    res.status(500).json({ error: "Failed to change transfer status." });
+  }
+};
+
 module.exports = {
   createTransferRequest,
   getTransferList,
+  changeTransferStatus,
 };

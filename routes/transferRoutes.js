@@ -10,16 +10,20 @@ const router = express.Router();
 router.post(
   "/create",
   authenticateJWT,
-  authorizeRole("maker"),
   transferController.createTransferRequest
 );
-
 
 router.get(
   "/transfer-list",
   authenticateJWT,
-  authorizeRole("maker"),
   transferController.getTransferList
+);
+
+router.patch(
+  "/change-status/:transferId",
+  authenticateJWT,
+  authorizeRole("approver"), // Assuming you have this middleware
+  transferController.changeTransferStatus
 );
 
 module.exports = router;
