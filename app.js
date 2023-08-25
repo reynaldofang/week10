@@ -9,6 +9,7 @@ const port = 8000;
 app.use(bodyParser.json());
 
 app.use("/", userRouter);
+// app.use("/transfers", transferRoutes);
 
 app.use(databaseMiddleware);
 
